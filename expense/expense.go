@@ -29,3 +29,7 @@ func NewExpense(db *sql.DB) *handler {
 func (h *handler) CreateExpense(c echo.Context) error {
 	return CreateExpenseHandler(c, h.DB)
 }
+
+func (h *handler) GetExpense(c echo.Context) error {
+	return GetOneByIDHandler(c, h.DB)
+}

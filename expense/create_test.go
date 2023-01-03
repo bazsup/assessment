@@ -107,6 +107,10 @@ func NewTestCtx(req *bytes.Buffer) *TestCtx {
 	return &TestCtx{req: req}
 }
 
+func (c *TestCtx) Param(name string) string {
+	return "1"
+}
+
 func (c *TestCtx) SetBindErr(err error) {
 	c.bindErr = err
 }
