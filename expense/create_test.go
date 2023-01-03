@@ -1,4 +1,5 @@
 //go:build unit
+// +build unit
 
 package expense_test
 
