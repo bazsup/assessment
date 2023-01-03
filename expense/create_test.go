@@ -101,14 +101,19 @@ type TestCtx struct {
 	status  int
 	v       []byte
 	bindErr error
+	param   string
 }
 
 func NewTestCtx(req *bytes.Buffer) *TestCtx {
 	return &TestCtx{req: req}
 }
 
+func (c *TestCtx) SetParam(value string) {
+	c.param = value
+}
+
 func (c *TestCtx) Param(name string) string {
-	return "1"
+	return c.param
 }
 
 func (c *TestCtx) SetBindErr(err error) {

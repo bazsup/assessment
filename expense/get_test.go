@@ -28,6 +28,7 @@ func TestGetExpenseByID(t *testing.T) {
 			Tags:   []string{"tag1", "tag2"},
 		}
 		ctx := NewTestCtx(nil)
+		ctx.SetParam("1")
 
 		expenseMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
 			AddRow(want.ID, want.Title, want.Amount, want.Note, pq.Array(&want.Tags))
@@ -60,6 +61,7 @@ func TestGetExpenseByID(t *testing.T) {
 
 		// Arrange
 		ctx := NewTestCtx(nil)
+		ctx.SetParam("1")
 
 		database, mock, sqlErr := sqlmock.New()
 		get := mock.ExpectPrepare("SELECT .+ FROM expenses WHERE id = .+")
@@ -84,6 +86,7 @@ func TestGetExpenseByID(t *testing.T) {
 
 		// Arrange
 		ctx := NewTestCtx(nil)
+		ctx.SetParam("1")
 
 		database, mock, sqlErr := sqlmock.New()
 		get := mock.ExpectPrepare("SELECT .+ FROM expenses WHERE id = .+")
@@ -108,6 +111,7 @@ func TestGetExpenseByID(t *testing.T) {
 
 		// Arrange
 		ctx := NewTestCtx(nil)
+		ctx.SetParam("1")
 
 		database, mock, sqlErr := sqlmock.New()
 		get := mock.ExpectPrepare("SELECT .+ FROM expenses WHERE id = .+")

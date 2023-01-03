@@ -14,8 +14,12 @@ func UpdateExpense(c router.RouterCtx, database *sql.DB) error {
 	if err := c.Bind(&exp); err != nil {
 		return c.JSON(http.StatusBadRequest, Err{Message: err.Error()})
 	}
-	id, _ := strconv.Atoi(c.Param("id")) // TODO "Invalid expense id param should returns status not found"
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusNotFound, Err{Message: "expense not found"})
+	}
 	exp.ID = id
+
 	stmt, err := database.Prepare(`
 	UPDATE expenses
 	SET title = $2, amount = $3, note = $4, tags = $5

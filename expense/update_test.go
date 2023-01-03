@@ -34,6 +34,7 @@ func TestUpdateExpense(t *testing.T) {
 			"tags": ["updated-tag"]
 		}`)
 		ctx := NewTestCtx(reqBody)
+		ctx.SetParam("1")
 
 		database, mock, sqlErr := sqlmock.New()
 		update := mock.ExpectPrepare("UPDATE .+ SET .+ WHERE id = .+")
@@ -85,6 +86,35 @@ func TestUpdateExpense(t *testing.T) {
 			assert.Equal(t, http.StatusBadRequest, ctx.status)
 
 			assert.NotEmpty(t, errRes.Message)
+		}
+	})
+
+	t.Run("Invalid expense id param should returns status not found", func(t *testing.T) {
+		t.Parallel()
+
+		// Arrange
+		reqBody := bytes.NewBufferString(`{
+			"title": "updated-title",
+			"amount": 40000,
+			"note": "updated-note",
+			"tags": ["updated-tag"]
+		}`)
+		ctx := NewTestCtx(reqBody)
+		ctx.SetParam("invalid param")
+
+		database, _, _ := sqlmock.New()
+
+		// Act
+		err := expense.UpdateExpense(ctx, database)
+
+		var errRes expense.Err
+		ctx.DecodeResponse(&errRes)
+
+		// Assertions
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusNotFound, ctx.status)
+
+			assert.Equal(t, "expense not found", errRes.Message)
 		}
 	})
 }
