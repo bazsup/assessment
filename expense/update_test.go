@@ -5,6 +5,7 @@ package expense_test
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -60,6 +61,30 @@ func TestUpdateExpense(t *testing.T) {
 		}
 		if err = mock.ExpectationsWereMet(); err != nil {
 			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+	})
+
+	t.Run("Invalid update expense request should returns status bad request", func(t *testing.T) {
+		t.Parallel()
+
+		// Arrange
+		reqBody := bytes.NewBufferString(`invalid request`)
+		ctx := NewTestCtx(reqBody)
+		ctx.SetBindErr(fmt.Errorf("bind error"))
+
+		database, _, _ := sqlmock.New()
+
+		// Act
+		err := expense.UpdateExpense(ctx, database)
+
+		var errRes expense.Err
+		ctx.DecodeResponse(&errRes)
+
+		// Assertions
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusBadRequest, ctx.status)
+
+			assert.NotEmpty(t, errRes.Message)
 		}
 	})
 }

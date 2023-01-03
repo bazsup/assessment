@@ -11,7 +11,9 @@ import (
 
 func UpdateExpense(c router.RouterCtx, database *sql.DB) error {
 	var exp Expense
-	_ = c.Bind(&exp)                     // TODO "Invalid update expense request should returns status bad request"
+	if err := c.Bind(&exp); err != nil {
+		return c.JSON(http.StatusBadRequest, Err{Message: err.Error()})
+	}
 	id, _ := strconv.Atoi(c.Param("id")) // TODO "Invalid expense id param should returns status not found"
 	exp.ID = id
 	stmt, err := database.Prepare(`
