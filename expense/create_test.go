@@ -70,6 +70,30 @@ func TestCreateExpense(t *testing.T) {
 			assert.NotEmpty(t, errRes.Message)
 		}
 	})
+
+	t.Run("SQL error should return status code internal server error", func(t *testing.T) {
+		// Arrange
+		reqBody := bytes.NewBufferString(`{
+			"title": "test-title",
+			"amount": 39000,
+			"note": "test-note",
+			"tags": ["test-tag1", "test-tag2"]
+		}`)
+		ctx := NewTestCtx(reqBody)
+		database, _, _ := sqlmock.New()
+
+		// Act
+		err := expense.CreateExpenseHandler(ctx, database)
+
+		var errRes expense.Err
+		ctx.DecodeResponse(&errRes)
+
+		// Assertions
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusInternalServerError, ctx.status)
+			assert.NotEmpty(t, errRes.Message)
+		}
+	})
 }
 
 type TestCtx struct {
