@@ -131,3 +131,41 @@ func TestGetExpenseByID(t *testing.T) {
 		}
 	})
 }
+
+func TestGetAllExpenses(t *testing.T) {
+	t.Run("Get All Expenses success", func(t *testing.T) {
+		t.Parallel()
+
+		// Arrange
+		want := expense.Expense{
+			ID:     1,
+			Title:  "test-title",
+			Amount: 39000,
+			Note:   "test-note",
+			Tags:   []string{"tag1", "tag2"},
+		}
+		ctx := NewTestCtx(nil)
+
+		expenseMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+			AddRow(want.ID, want.Title, want.Amount, want.Note, pq.Array(&want.Tags))
+
+		database, mock, sqlErr := sqlmock.New()
+		get := mock.ExpectPrepare("SELECT .+ FROM expenses")
+		get.ExpectQuery().WillReturnRows(expenseMockRows)
+
+		// Act
+		err := expense.GetAllExpensesHandler(ctx, database)
+
+		var expenses []expense.Expense
+		ctx.DecodeResponse(&expenses)
+
+		// Assertions
+		assert.NoError(t, sqlErr)
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusOK, ctx.status)
+
+			assert.Equal(t, 1, len(expenses))
+		}
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+}
