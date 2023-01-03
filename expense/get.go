@@ -35,14 +35,17 @@ func GetAllExpensesHandler(c router.RouterCtx, database *sql.DB) error {
 		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare query expense statement:" + err.Error()})
 	}
 
-	rows, _ := stmt.Query()
-	// TODO "Database Query error should returns status internal server error"
+	rows, err := stmt.Query()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
+	}
 
 	expenses := []Expense{}
 	for rows.Next() {
 		var exp Expense
-		// TODO "Scan for entity error should returns status internal server error"
-		rows.Scan(&exp.ID, &exp.Title, &exp.Amount, &exp.Note, pq.Array(&exp.Tags))
+		if err := rows.Scan(&exp.ID, &exp.Title, &exp.Amount, &exp.Note, pq.Array(&exp.Tags)); err != nil {
+			return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
+		}
 
 		expenses = append(expenses, exp)
 	}

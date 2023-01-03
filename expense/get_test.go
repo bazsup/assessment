@@ -193,4 +193,63 @@ func TestGetAllExpenses(t *testing.T) {
 			assert.NotEmpty(t, errRes.Message)
 		}
 	})
+
+	t.Run("Database Query error should returns status internal server error", func(t *testing.T) {
+		t.Parallel()
+
+		// Arrange
+		ctx := NewTestCtx(nil)
+
+		database, mock, sqlErr := sqlmock.New()
+		get := mock.ExpectPrepare("SELECT .+ FROM expenses")
+		get.ExpectQuery().WillReturnError(fmt.Errorf("query error"))
+
+		// Act
+		err := expense.GetAllExpensesHandler(ctx, database)
+
+		var errRes expense.Err
+		ctx.DecodeResponse(&errRes)
+
+		// Assertions
+		assert.NoError(t, sqlErr)
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusInternalServerError, ctx.status)
+
+			assert.NotEmpty(t, errRes.Message)
+		}
+	})
+
+	t.Run("Scan for entity error should returns status internal server error", func(t *testing.T) {
+		t.Parallel()
+
+		// Arrange
+		want := expense.Expense{
+			ID:     1,
+			Title:  "test-title",
+			Amount: 39000,
+			Note:   "test-note",
+			Tags:   []string{"tag1", "tag2"},
+		}
+		ctx := NewTestCtx(nil)
+
+		expenseMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+			AddRow("invalid", want.Title, want.Amount, want.Note, pq.Array(&want.Tags))
+		database, mock, sqlErr := sqlmock.New()
+		get := mock.ExpectPrepare("SELECT .+ FROM expenses")
+		get.ExpectQuery().WillReturnRows(expenseMockRows)
+
+		// Act
+		err := expense.GetAllExpensesHandler(ctx, database)
+
+		var errRes expense.Err
+		ctx.DecodeResponse(&errRes)
+
+		// Assertions
+		assert.NoError(t, sqlErr)
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusInternalServerError, ctx.status)
+
+			assert.NotEmpty(t, errRes.Message)
+		}
+	})
 }
