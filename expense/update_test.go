@@ -41,7 +41,8 @@ func TestUpdateExpense(t *testing.T) {
 
 		update.
 			ExpectExec().
-			WithArgs(want.ID, want.Title, want.Amount, want.Note, pq.Array(&want.Tags))
+			WithArgs(want.ID, want.Title, want.Amount, want.Note, pq.Array(&want.Tags)).
+			WillReturnResult(sqlmock.NewResult(1, 1))
 
 		// Act
 		err := expense.UpdateExpense(ctx, database)
@@ -134,6 +135,39 @@ func TestUpdateExpense(t *testing.T) {
 		database, mock, sqlErr := sqlmock.New()
 		update := mock.ExpectPrepare("UPDATE .+ SET .+ WHERE id = .+")
 		update.WillReturnError(fmt.Errorf("prepare statment error"))
+
+		// Act
+		err := expense.UpdateExpense(ctx, database)
+
+		var errRes expense.Err
+		ctx.DecodeResponse(&errRes)
+
+		// Assertions
+		assert.NoError(t, sqlErr)
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusInternalServerError, ctx.status)
+
+			assert.NotEmpty(t, errRes.Message)
+		}
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("SQL Execute error should returns status internal server error", func(t *testing.T) {
+		t.Parallel()
+
+		// Arrange
+		reqBody := bytes.NewBufferString(`{
+			"title": "updated-title",
+			"amount": 40000,
+			"note": "updated-note",
+			"tags": ["updated-tag"]
+		}`)
+		ctx := NewTestCtx(reqBody)
+		ctx.SetParam("1")
+
+		database, mock, sqlErr := sqlmock.New()
+		update := mock.ExpectPrepare("UPDATE .+ SET .+ WHERE id = .+")
+		update.ExpectExec().WillReturnError(fmt.Errorf("execute statment error"))
 
 		// Act
 		err := expense.UpdateExpense(ctx, database)
