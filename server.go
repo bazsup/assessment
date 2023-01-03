@@ -25,6 +25,7 @@ func main() {
 	h := expense.NewExpense(db)
 
 	e.POST("/expenses", h.CreateExpense)
+	e.GET("/expenses", h.GetAllExpenses)
 	e.GET("/expenses/:id", h.GetExpense)
 	e.PUT("/expenses/:id", h.UpdateExpense)
 

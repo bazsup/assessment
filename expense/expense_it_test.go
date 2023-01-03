@@ -34,6 +34,7 @@ func setup() teardownFunc {
 		h := expense.NewExpense(db)
 
 		e.POST("/expenses", h.CreateExpense)
+		e.GET("/expenses", h.GetAllExpenses)
 		e.GET("/expenses/:id", h.GetExpense)
 		e.PUT("/expenses/:id", h.UpdateExpense)
 
@@ -113,6 +114,28 @@ func TestITGetExpense(t *testing.T) {
 		assert.Equal(t, exp.Amount, latest.Amount)
 		assert.Equal(t, exp.Note, latest.Note)
 		assert.Equal(t, exp.Tags, latest.Tags)
+	}
+}
+
+func TestITGetAllExpenses(t *testing.T) {
+	// Setup server
+	teardown := setup()
+	defer teardown(t)
+
+	// Arrange
+	seedExpense(t)
+
+	// Act
+	res := request(http.MethodGet, uri("expenses"), nil)
+
+	var expenses []expense.Expense
+	err := res.Decode(&expenses)
+	res.Body.Close()
+
+	// Assertions
+	if assert.NoError(t, err) {
+		assert.EqualValues(t, http.StatusOK, res.StatusCode)
+		assert.Greater(t, len(expenses), 0)
 	}
 }
 

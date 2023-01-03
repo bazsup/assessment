@@ -34,6 +34,10 @@ func (h *handler) GetExpense(c echo.Context) error {
 	return GetOneByIDHandler(c, h.DB)
 }
 
+func (h *handler) GetAllExpenses(c echo.Context) error {
+	return GetAllExpensesHandler(c, h.DB)
+}
+
 func (h *handler) UpdateExpense(c echo.Context) error {
 	return UpdateExpense(c, h.DB)
 }

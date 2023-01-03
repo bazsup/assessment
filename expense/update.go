@@ -26,7 +26,7 @@ func UpdateExpense(c router.RouterCtx, database *sql.DB) error {
 	WHERE id = $1
 	`)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare query user statement:" + err.Error()})
+		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare query expense statement:" + err.Error()})
 	}
 
 	_, err = stmt.Exec(exp.ID, exp.Title, exp.Amount, exp.Note, pq.Array(exp.Tags))
