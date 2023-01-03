@@ -24,7 +24,7 @@ func UpdateExpense(c router.RouterCtx, database *sql.DB) error {
 	UPDATE expenses
 	SET title = $2, amount = $3, note = $4, tags = $5
 	WHERE id = $1
-	`) // TODO "SQL Prepare statement error should returns status internal server error"
+	`)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare query user statement:" + err.Error()})
 	}
