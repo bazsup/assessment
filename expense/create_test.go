@@ -10,17 +10,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/bazsup/assessment/expense"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 
 	_ "github.com/lib/pq"
 )
-
-// TODO: remove dependency
-func init() {
-	expense.InitDB()
-}
 
 func TestCreateExpense(t *testing.T) {
 	t.Run("Create Expense success", func(t *testing.T) {
@@ -37,9 +33,14 @@ func TestCreateExpense(t *testing.T) {
 		rec := httptest.NewRecorder()
 
 		c := e.NewContext(req, rec)
+		expenseMockRows := sqlmock.NewRows([]string{"id"}).
+			AddRow("1")
+
+		database, mock, err := sqlmock.New()
+		mock.ExpectQuery("INSERT INTO expenses (.+) VALUES (.+) RETURNING id").WillReturnRows(expenseMockRows)
 
 		// Act
-		err := expense.CreateExpenseHandler(c)
+		err = expense.CreateExpenseHandler(c, database)
 
 		var exp expense.Expense
 		json.NewDecoder(rec.Body).Decode(&exp)
@@ -65,8 +66,10 @@ func TestCreateExpense(t *testing.T) {
 
 		c := e.NewContext(req, rec)
 
+		database, _, _ := sqlmock.New()
+
 		// Act
-		err := expense.CreateExpenseHandler(c)
+		err := expense.CreateExpenseHandler(c, database)
 
 		var errRes expense.Err
 		json.NewDecoder(rec.Body).Decode(&errRes)

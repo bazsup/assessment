@@ -28,9 +28,11 @@ type teardownFunc = func(t *testing.T)
 func setup() teardownFunc {
 	eh := echo.New()
 	go func(e *echo.Echo) {
-		expense.InitDB()
+		db := expense.InitDB()
 
-		e.POST("/expenses", expense.CreateExpenseHandler)
+		h := expense.NewExpense(db)
+
+		e.POST("/expenses", h.CreateExpense)
 		e.Start(fmt.Sprintf(":%d", serverPort))
 	}(eh)
 	for {

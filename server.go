@@ -15,14 +15,16 @@ import (
 )
 
 func main() {
-	expense.InitDB()
+	db := expense.InitDB()
 
 	e := echo.New()
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	e.POST("/expenses", expense.CreateExpenseHandler)
+	h := expense.NewExpense(db)
+
+	e.POST("/expenses", h.CreateExpense)
 
 	go func() {
 		if err := e.Start(os.Getenv("PORT")); err != nil && err != http.ErrServerClosed { // Start server

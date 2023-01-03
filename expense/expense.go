@@ -1,5 +1,11 @@
 package expense
 
+import (
+	"database/sql"
+
+	"github.com/labstack/echo/v4"
+)
+
 type Expense struct {
 	ID     int      `json:"id"`
 	Title  string   `json:"title"`
@@ -10,4 +16,16 @@ type Expense struct {
 
 type Err struct {
 	Message string `json:"message"`
+}
+
+type handler struct {
+	DB *sql.DB
+}
+
+func NewExpense(db *sql.DB) *handler {
+	return &handler{db}
+}
+
+func (h *handler) CreateExpense(c echo.Context) error {
+	return CreateExpenseHandler(c, h.DB)
 }
