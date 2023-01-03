@@ -1,0 +1,19 @@
+version: '3'
+
+networks:
+  assessment-integration-test:
+
+services:
+  db_test:
+    image: postgres:14.3-alpine
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: assessment
+    ports:
+      - "5432:5432"
+    restart: on-failure
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/
+    networks:
+      - assessment-integration-test
