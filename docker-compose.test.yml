@@ -1,0 +1,30 @@
+version: '3'
+
+networks:
+  assessment-integration-test:
+
+services:
+  it_tests:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.test
+    environment:
+      - DATABASE_URL=postgresql://root:root@db/assessment?sslmode=disable
+    volumes:
+      - .:/go/src/target
+    depends_on:
+      - db
+    networks:
+      - assessment-integration-test
+
+  db:
+    image: postgres:14.3-alpine
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: assessment
+    restart: on-failure
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/
+    networks:
+      - assessment-integration-test
