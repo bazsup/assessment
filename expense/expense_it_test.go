@@ -35,6 +35,8 @@ func setup() teardownFunc {
 
 		e.POST("/expenses", h.CreateExpense)
 		e.GET("/expenses/:id", h.GetExpense)
+		e.PUT("/expenses/:id", h.UpdateExpense)
+
 		e.Start(fmt.Sprintf(":%d", serverPort))
 	}(eh)
 	for {
@@ -111,6 +113,40 @@ func TestITGetExpense(t *testing.T) {
 		assert.Equal(t, exp.Amount, latest.Amount)
 		assert.Equal(t, exp.Note, latest.Note)
 		assert.Equal(t, exp.Tags, latest.Tags)
+	}
+}
+
+func TestITUpdateExpense(t *testing.T) {
+	// Setup server
+	teardown := setup()
+	defer teardown(t)
+
+	// Arrange
+	exp := seedExpense(t)
+	reqBody := `{
+		"title": "updated-title",
+		"amount": 40000,
+		"note": "updated-note",
+		"tags": ["updated-tag"]
+	}`
+
+	// Act
+	res := request(http.MethodPut, uri("expenses", strconv.Itoa(exp.ID)), strings.NewReader(reqBody))
+
+	var updatedExp expense.Expense
+	err := res.Decode(&updatedExp)
+	assert.NoError(t, err)
+	res.Body.Close()
+
+	// Assertions
+	if assert.NoError(t, err) {
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		assert.Equal(t, exp.ID, updatedExp.ID)
+		assert.Equal(t, "updated-title", updatedExp.Title)
+		assert.Equal(t, float64(40000), updatedExp.Amount)
+		assert.Equal(t, "updated-note", updatedExp.Note)
+		assert.Equal(t, []string{"updated-tag"}, updatedExp.Tags)
 	}
 }
 
