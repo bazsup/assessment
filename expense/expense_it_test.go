@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -33,6 +34,7 @@ func setup() teardownFunc {
 		h := expense.NewExpense(db)
 
 		e.POST("/expenses", h.CreateExpense)
+		e.GET("/expenses/:id", h.GetExpense)
 		e.Start(fmt.Sprintf(":%d", serverPort))
 	}(eh)
 	for {
@@ -68,9 +70,9 @@ func TestITCreateExpense(t *testing.T) {
 	}`
 
 	// Act
-	var exp expense.Expense
-
 	res := request(http.MethodPost, uri("expenses"), strings.NewReader(reqBody))
+
+	var exp expense.Expense
 	err := res.Decode(&exp)
 	assert.NoError(t, err)
 	res.Body.Close()
@@ -83,6 +85,49 @@ func TestITCreateExpense(t *testing.T) {
 		assert.Equal(t, "test-note", exp.Note)
 		assert.Equal(t, []string{"test-tag1", "test-tag2"}, exp.Tags)
 	}
+}
+
+func TestITGetExpense(t *testing.T) {
+	// Setup server
+	teardown := setup()
+	defer teardown(t)
+
+	// Arrange
+	exp := seedExpense(t)
+
+	// Act
+	res := request(http.MethodGet, uri("expenses", strconv.Itoa(exp.ID)), nil)
+
+	var latest expense.Expense
+	err := res.Decode(&latest)
+	assert.NoError(t, err)
+	res.Body.Close()
+
+	// Assertions
+	if assert.NoError(t, err) {
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+		assert.Equal(t, exp.ID, latest.ID)
+		assert.Equal(t, exp.Title, latest.Title)
+		assert.Equal(t, exp.Amount, latest.Amount)
+		assert.Equal(t, exp.Note, latest.Note)
+		assert.Equal(t, exp.Tags, latest.Tags)
+	}
+}
+
+func seedExpense(t *testing.T) expense.Expense {
+	var c expense.Expense
+	body := strings.NewReader(`{
+		"title": "test-title",
+		"amount": 39000,
+		"note": "test-note",
+		"tags": ["test-tag1", "test-tag2"]
+	}`)
+	err := request(http.MethodPost, uri("expenses"), body).Decode(&c)
+	if err != nil {
+		t.Fatal("can't create expense:", err)
+	}
+
+	return c
 }
 
 func uri(paths ...string) string {
