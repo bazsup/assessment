@@ -30,8 +30,10 @@ func GetOneByIDHandler(c router.RouterCtx, database *sql.DB) error {
 }
 
 func GetAllExpensesHandler(c router.RouterCtx, database *sql.DB) error {
-	stmt, _ := database.Prepare("SELECT id, title, amount, note, tags FROM expenses")
-	// TODO "Prepare statement error should returns status internal server error"
+	stmt, err := database.Prepare("SELECT id, title, amount, note, tags FROM expenses")
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare query user statement:" + err.Error()})
+	}
 
 	rows, _ := stmt.Query()
 	// TODO "Database Query error should returns status internal server error"

@@ -168,4 +168,29 @@ func TestGetAllExpenses(t *testing.T) {
 		}
 		assert.NoError(t, mock.ExpectationsWereMet())
 	})
+
+	t.Run("Prepare statement error should returns status internal server error", func(t *testing.T) {
+		t.Parallel()
+
+		// Arrange
+		ctx := NewTestCtx(nil)
+
+		database, mock, sqlErr := sqlmock.New()
+		get := mock.ExpectPrepare("SELECT .+ FROM expenses")
+		get.WillReturnError(fmt.Errorf("prepare stmt error"))
+
+		// Act
+		err := expense.GetAllExpensesHandler(ctx, database)
+
+		var errRes expense.Err
+		ctx.DecodeResponse(&errRes)
+
+		// Assertions
+		assert.NoError(t, sqlErr)
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusInternalServerError, ctx.status)
+
+			assert.NotEmpty(t, errRes.Message)
+		}
+	})
 }
