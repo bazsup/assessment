@@ -4,11 +4,11 @@ import (
 	"database/sql"
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/bazsup/assessment/router"
 	"github.com/lib/pq"
 )
 
-func CreateExpenseHandler(c echo.Context, database *sql.DB) error {
+func CreateExpenseHandler(c router.RouterCtx, database *sql.DB) error {
 	var exp Expense
 	err := c.Bind(&exp)
 	if err != nil {
