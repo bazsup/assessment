@@ -23,6 +23,15 @@ type storer interface {
 	UpdateExpense(exp Expense) error
 }
 
+func NewApp(e *echo.Echo, s storer) {
+	h := NewExpense(s)
+
+	e.POST("/expenses", h.CreateExpense)
+	e.GET("/expenses", h.GetAllExpenses)
+	e.GET("/expenses/:id", h.GetExpense)
+	e.PUT("/expenses/:id", h.UpdateExpense)
+}
+
 type handler struct {
 	store storer
 }

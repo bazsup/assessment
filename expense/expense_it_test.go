@@ -33,12 +33,7 @@ func setup() teardownFunc {
 		db := expense.InitDB()
 		store := expense.NewExpenseStore(db)
 
-		h := expense.NewExpense(store)
-
-		e.POST("/expenses", h.CreateExpense)
-		e.GET("/expenses", h.GetAllExpenses)
-		e.GET("/expenses/:id", h.GetExpense)
-		e.PUT("/expenses/:id", h.UpdateExpense)
+		expense.NewApp(e, store)
 
 		e.Start(fmt.Sprintf(":%d", serverPort))
 	}(eh)

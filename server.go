@@ -21,14 +21,9 @@ func main() {
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	
 	store := expense.NewExpenseStore(db)
-
-	h := expense.NewExpense(store)
-
-	e.POST("/expenses", h.CreateExpense)
-	e.GET("/expenses", h.GetAllExpenses)
-	e.GET("/expenses/:id", h.GetExpense)
-	e.PUT("/expenses/:id", h.UpdateExpense)
+	expense.NewApp(e, store)
 
 	go func() {
 		if err := e.Start(os.Getenv("PORT")); err != nil && err != http.ErrServerClosed { // Start server
