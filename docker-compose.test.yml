@@ -10,7 +10,7 @@ services:
       dockerfile: ./Dockerfile.test
     environment:
       - AUTH_TOKEN='November 10, 2009'
-      - PORT=2565
+      - PORT=:2565
       - DATABASE_URL=postgresql://root:root@db/assessment?sslmode=disable
     volumes:
       - .:/go/src/target
