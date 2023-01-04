@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -76,18 +77,15 @@ func TestITCreateExpense(t *testing.T) {
 	// Act
 	res := request(http.MethodPost, uri("expenses"), strings.NewReader(reqBody))
 
-	var exp expense.Expense
-	err := res.Decode(&exp)
-	assert.NoError(t, err)
+	byteBody, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
 
 	// Assertions
+	want := `{"id":\d+,"title":"test-title","amount":39000,"note":"test-note","tags":\["test-tag1","test-tag2"\]}`
+
 	if assert.NoError(t, err) {
 		assert.Equal(t, http.StatusCreated, res.StatusCode)
-		assert.Equal(t, "test-title", exp.Title)
-		assert.Equal(t, float64(39000), exp.Amount)
-		assert.Equal(t, "test-note", exp.Note)
-		assert.Equal(t, []string{"test-tag1", "test-tag2"}, exp.Tags)
+		assert.Regexp(t, want, strings.TrimSpace(string(byteBody)))
 	}
 }
 
@@ -102,19 +100,18 @@ func TestITGetExpense(t *testing.T) {
 	// Act
 	res := request(http.MethodGet, uri("expenses", strconv.Itoa(exp.ID)), nil)
 
-	var latest expense.Expense
-	err := res.Decode(&latest)
-	assert.NoError(t, err)
+	byteBody, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
 
 	// Assertions
+	want := fmt.Sprintf(
+		`{"id":%d,"title":"test-title","amount":39000,"note":"test-note","tags":["test-tag1","test-tag2"]}`,
+		exp.ID,
+	)
+
 	if assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, res.StatusCode)
-		assert.Equal(t, exp.ID, latest.ID)
-		assert.Equal(t, exp.Title, latest.Title)
-		assert.Equal(t, exp.Amount, latest.Amount)
-		assert.Equal(t, exp.Note, latest.Note)
-		assert.Equal(t, exp.Tags, latest.Tags)
+		assert.Equal(t, want, strings.TrimSpace(string(byteBody)))
 	}
 }
 
@@ -129,14 +126,13 @@ func TestITGetAllExpenses(t *testing.T) {
 	// Act
 	res := request(http.MethodGet, uri("expenses"), nil)
 
-	var expenses []expense.Expense
-	err := res.Decode(&expenses)
-	res.Body.Close()
+	var body []interface{}
+	err := res.Decode(&body)
 
 	// Assertions
 	if assert.NoError(t, err) {
 		assert.EqualValues(t, http.StatusOK, res.StatusCode)
-		assert.Greater(t, len(expenses), 0)
+		assert.Greater(t, len(body), 0)
 	}
 }
 
@@ -157,20 +153,19 @@ func TestITUpdateExpense(t *testing.T) {
 	// Act
 	res := request(http.MethodPut, uri("expenses", strconv.Itoa(exp.ID)), strings.NewReader(reqBody))
 
-	var updatedExp expense.Expense
-	err := res.Decode(&updatedExp)
-	assert.NoError(t, err)
+	byteBody, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
 
 	// Assertions
+	want := fmt.Sprintf(
+		`{"id":%d,"title":"updated-title","amount":40000,"note":"updated-note","tags":["updated-tag"]}`,
+		exp.ID,
+	)
+
 	if assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
-		assert.Equal(t, exp.ID, updatedExp.ID)
-		assert.Equal(t, "updated-title", updatedExp.Title)
-		assert.Equal(t, float64(40000), updatedExp.Amount)
-		assert.Equal(t, "updated-note", updatedExp.Note)
-		assert.Equal(t, []string{"updated-tag"}, updatedExp.Tags)
+		assert.Equal(t, want, strings.TrimSpace(string(byteBody)))
 	}
 }
 
