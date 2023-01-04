@@ -124,3 +124,85 @@ func TestDBGetExpenseByID(t *testing.T) {
 		assert.Equal(t, sql.ErrNoRows, err)
 	})
 }
+
+func TestDBGetAllExpenses(t *testing.T) {
+	exp := expense.Expense{
+		ID:     1,
+		Title:  "test-title",
+		Amount: 39000,
+		Note:   "test-note",
+		Tags:   []string{"tag1", "tag2"},
+	}
+
+	t.Run("Get All Expeses Success", func(t *testing.T) {
+		expStore, mock := setupDB(t)
+
+		// Arrange
+		expenseMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+			AddRow(exp.ID, exp.Title, exp.Amount, exp.Note, pq.Array(&exp.Tags))
+		get := mock.ExpectPrepare("SELECT .+ FROM expenses")
+		get.ExpectQuery().WillReturnRows(expenseMockRows)
+
+		// Act
+		expenses, err := expStore.GetAllExpenses()
+
+		// Assertions
+		if assert.NoError(t, err) {
+			assert.Equal(t, 1, len(expenses))
+			assert.Equal(t, exp.ID, expenses[0].ID)
+		}
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	negativeTests := []struct {
+		name             string
+		arrange          func(mock sqlmock.Sqlmock)
+		expectErrContain string
+	}{
+		{
+			name: "Prepare statement error",
+			arrange: func(mock sqlmock.Sqlmock) {
+				get := mock.ExpectPrepare("SELECT .+ FROM expenses")
+				get.WillReturnError(fmt.Errorf("prepare stmt error"))
+			},
+			expectErrContain: "prepare stmt error",
+		},
+		{
+			name: "Query error",
+			arrange: func(mock sqlmock.Sqlmock) {
+				get := mock.ExpectPrepare("SELECT .+ FROM expenses")
+				get.ExpectQuery().WillReturnError(fmt.Errorf("query error"))
+			},
+			expectErrContain: "query error",
+		},
+		{
+			name: "Scan entity error",
+			arrange: func(mock sqlmock.Sqlmock) {
+				get := mock.ExpectPrepare("SELECT .+ FROM expenses")
+
+				expenseMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+					AddRow("invalid", exp.Title, exp.Amount, exp.Note, pq.Array(&exp.Tags))
+				get.ExpectQuery().WillReturnRows(expenseMockRows)
+			},
+			expectErrContain: "sql: Scan error",
+		},
+	}
+
+	for _, tt := range negativeTests {
+		tt := tt // rebind tt into this lexical scope
+		t.Run(tt.name, func(t *testing.T) {
+			expStore, mock := setupDB(t)
+
+			// Arrange
+			tt.arrange(mock)
+
+			// Act
+			expenses, err := expStore.GetAllExpenses()
+
+			// Assertions
+			assert.Contains(t, err.Error(), tt.expectErrContain)
+			assert.Nil(t, expenses)
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}

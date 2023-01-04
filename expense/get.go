@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/bazsup/assessment/router"
-	"github.com/lib/pq"
 )
 
 func GetOneByIDHandler(c router.RouterCtx, store storer) error {
@@ -27,25 +26,10 @@ func GetOneByIDHandler(c router.RouterCtx, store storer) error {
 	}
 }
 
-func GetAllExpensesHandler(c router.RouterCtx, database *sql.DB) error {
-	stmt, err := database.Prepare("SELECT id, title, amount, note, tags FROM expenses")
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare query expense statement:" + err.Error()})
-	}
-
-	rows, err := stmt.Query()
+func GetAllExpensesHandler(c router.RouterCtx, storer storer) error {
+	expenses, err := storer.GetAllExpenses()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
-	}
-
-	expenses := []Expense{}
-	for rows.Next() {
-		var exp Expense
-		if err := rows.Scan(&exp.ID, &exp.Title, &exp.Amount, &exp.Note, pq.Array(&exp.Tags)); err != nil {
-			return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
-		}
-
-		expenses = append(expenses, exp)
 	}
 
 	return c.JSON(http.StatusOK, expenses)

@@ -67,3 +67,27 @@ func (e *ExpenseStore) GetExpenseByID(id int) (*Expense, error) {
 
 	return exp, nil
 }
+
+func (e *ExpenseStore) GetAllExpenses() ([]*Expense, error) {
+	stmt, err := e.DB.Prepare("SELECT id, title, amount, note, tags FROM expenses")
+	if err != nil {
+		return nil, fmt.Errorf("can't prepare query expense statement: %s", err.Error())
+	}
+
+	rows, err := stmt.Query()
+	if err != nil {
+		return nil, err
+	}
+
+	expenses := []*Expense{}
+	for rows.Next() {
+		var exp Expense
+		if err := rows.Scan(&exp.ID, &exp.Title, &exp.Amount, &exp.Note, pq.Array(&exp.Tags)); err != nil {
+			return nil, err
+		}
+
+		expenses = append(expenses, &exp)
+	}
+
+	return expenses, nil
+}

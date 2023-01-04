@@ -104,6 +104,7 @@ func TestCreateExpense(t *testing.T) {
 type TestStore struct {
 	ctr  *CreateExpenseTestResult
 	gotr *GetOneExpenseTestResult
+	gatr *GetAllExpensesTestResult
 }
 
 func NewTestStore() *TestStore {
@@ -126,6 +127,14 @@ func (s *TestStore) GetExpenseByIDWillReturn(exp *expense.Expense, err error) {
 	s.gotr = &GetOneExpenseTestResult{exp, err}
 }
 
+func (s *TestStore) GetAllExpenses() ([]*expense.Expense, error) {
+	return s.gatr.exp, s.gatr.err
+}
+
+func (s *TestStore) GetAllExpensesWillReturn(expenses []*expense.Expense, err error) {
+	s.gatr = &GetAllExpensesTestResult{expenses, err}
+}
+
 type CreateExpenseTestResult struct {
 	id  int
 	err error
@@ -133,6 +142,11 @@ type CreateExpenseTestResult struct {
 
 type GetOneExpenseTestResult struct {
 	exp *expense.Expense
+	err error
+}
+
+type GetAllExpensesTestResult struct {
+	exp []*expense.Expense
 	err error
 }
 

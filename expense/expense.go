@@ -21,10 +21,11 @@ type Err struct {
 type storer interface {
 	CreateExpense(exp Expense) (int, error)
 	GetExpenseByID(id int) (*Expense, error)
+	GetAllExpenses() ([]*Expense, error)
 }
 
 type handler struct {
-	DB *sql.DB
+	DB    *sql.DB
 	store storer
 }
 
@@ -41,7 +42,7 @@ func (h *handler) GetExpense(c echo.Context) error {
 }
 
 func (h *handler) GetAllExpenses(c echo.Context) error {
-	return GetAllExpensesHandler(c, h.DB)
+	return GetAllExpensesHandler(c, h.store)
 }
 
 func (h *handler) UpdateExpense(c echo.Context) error {
