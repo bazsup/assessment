@@ -33,7 +33,7 @@ func setup() teardownFunc {
 		db := expense.InitDB()
 		store := expense.NewExpenseStore(db)
 
-		h := expense.NewExpense(db, store)
+		h := expense.NewExpense(store)
 
 		e.POST("/expenses", h.CreateExpense)
 		e.GET("/expenses", h.GetAllExpenses)

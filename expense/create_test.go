@@ -16,10 +16,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func setupCreateExpense(t *testing.T, reqBody *bytes.Buffer) (*TestCtx, *TestStore) {
+func setupExpense(t *testing.T) (*TestCtx, *TestStore) {
 	t.Parallel()
 
-	ctx := NewTestCtx(reqBody)
+	ctx := NewTestCtx()
 	store := NewTestStore()
 	return ctx, store
 }
@@ -33,11 +33,12 @@ func TestCreateExpense(t *testing.T) {
 			"note": "test-note",
 			"tags": ["test-tag1", "test-tag2"]
 		}`)
-		ctx, store := setupCreateExpense(t, validReqBody)
+		ctx, store := setupExpense(t)
 
 		store.CreateExpenseWillReturn(1, nil)
 
 		// Act
+		ctx.SetReqBody(validReqBody)
 		err := expense.CreateExpenseHandler(ctx, store)
 
 		var exp expense.Expense
@@ -58,11 +59,12 @@ func TestCreateExpense(t *testing.T) {
 	t.Run("Invalid Create Expense Request", func(t *testing.T) {
 		// Arrange
 		invalidReqBody := bytes.NewBufferString(`xx`)
-		ctx, store := setupCreateExpense(t, invalidReqBody)
+		ctx, store := setupExpense(t)
 
 		ctx.SetBindErr(fmt.Errorf("bind error"))
 
 		// Act
+		ctx.SetReqBody(invalidReqBody)
 		err := expense.CreateExpenseHandler(ctx, store)
 
 		var errRes expense.Err
@@ -83,11 +85,12 @@ func TestCreateExpense(t *testing.T) {
 			"note": "test-note",
 			"tags": ["test-tag1", "test-tag2"]
 		}`)
-		ctx, store := setupCreateExpense(t, validReqBody)
+		ctx, store := setupExpense(t)
 
 		store.CreateExpenseWillReturn(0, fmt.Errorf("fail to create expense"))
 
 		// Act
+		ctx.SetReqBody(validReqBody)
 		err := expense.CreateExpenseHandler(ctx, store)
 
 		var errRes expense.Err
@@ -105,6 +108,7 @@ type TestStore struct {
 	ctr  *CreateExpenseTestResult
 	gotr *GetOneExpenseTestResult
 	gatr *GetAllExpensesTestResult
+	utr  *UpdateExpenseTestResult
 }
 
 func NewTestStore() *TestStore {
@@ -135,6 +139,14 @@ func (s *TestStore) GetAllExpensesWillReturn(expenses []*expense.Expense, err er
 	s.gatr = &GetAllExpensesTestResult{expenses, err}
 }
 
+func (s *TestStore) UpdateExpense(exp expense.Expense) error {
+	return s.utr.err
+}
+
+func (s *TestStore) UpdateExpenseWillReturn(err error) {
+	s.utr = &UpdateExpenseTestResult{err}
+}
+
 type CreateExpenseTestResult struct {
 	id  int
 	err error
@@ -150,6 +162,10 @@ type GetAllExpensesTestResult struct {
 	err error
 }
 
+type UpdateExpenseTestResult struct {
+	err error
+}
+
 type TestCtx struct {
 	req     *bytes.Buffer
 	status  int
@@ -158,8 +174,12 @@ type TestCtx struct {
 	param   string
 }
 
-func NewTestCtx(req *bytes.Buffer) *TestCtx {
-	return &TestCtx{req: req}
+func NewTestCtx() *TestCtx {
+	return &TestCtx{}
+}
+
+func (c *TestCtx) SetReqBody(req *bytes.Buffer) {
+	c.req = req
 }
 
 func (c *TestCtx) SetParam(value string) {

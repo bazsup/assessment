@@ -13,14 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupExpense(t *testing.T) (*TestCtx, *TestStore) {
-	t.Parallel()
-
-	ctx := NewTestCtx(nil)
-	store := NewTestStore()
-	return ctx, store
-}
-
 func TestGetExpenseByID(t *testing.T) {
 	t.Run("Get Expense success", func(t *testing.T) {
 		ctx, store := setupExpense(t)

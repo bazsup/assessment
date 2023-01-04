@@ -91,3 +91,21 @@ func (e *ExpenseStore) GetAllExpenses() ([]*Expense, error) {
 
 	return expenses, nil
 }
+
+func (e *ExpenseStore) UpdateExpense(exp Expense) error {
+	stmt, err := e.DB.Prepare(`
+	UPDATE expenses
+	SET title = $2, amount = $3, note = $4, tags = $5
+	WHERE id = $1
+	`)
+	if err != nil {
+		return fmt.Errorf("can't prepare update expense statement:%s", err.Error())
+	}
+
+	_, err = stmt.Exec(exp.ID, exp.Title, exp.Amount, exp.Note, pq.Array(exp.Tags))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

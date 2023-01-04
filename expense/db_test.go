@@ -206,3 +206,71 @@ func TestDBGetAllExpenses(t *testing.T) {
 		})
 	}
 }
+
+func TestDBUpdateExpense(t *testing.T) {
+	exp := expense.Expense{
+		ID: 1,
+		Title:  "updated-title",
+		Amount: 40000,
+		Note:   "updated-note",
+		Tags:   []string{"updated-tag"},
+	}
+
+	t.Run("Update Expense success", func(t *testing.T) {
+		expStore, mock := setupDB(t)
+
+		// Arrange
+		update := mock.ExpectPrepare("UPDATE .+ SET .+ WHERE id = .+")
+		update.
+			ExpectExec().
+			WithArgs(exp.ID, exp.Title, exp.Amount, exp.Note, pq.Array(&exp.Tags)).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+
+		// Act
+		err := expStore.UpdateExpense(exp)
+
+		// Assertions
+		assert.NoError(t, err)
+		assert.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	negativeTests := []struct {
+		name             string
+		arrange          func(mock sqlmock.Sqlmock)
+		expectErrContain string
+	}{
+		{
+			name: "SQL Prepare statement error should returns status internal server error",
+			arrange: func(mock sqlmock.Sqlmock) {
+				update := mock.ExpectPrepare("UPDATE .+ SET .+ WHERE id = .+")
+				update.WillReturnError(fmt.Errorf("prepare statement error"))
+			},
+			expectErrContain: "prepare statement error",
+		},
+		{
+			name: "SQL Execute error should returns status internal server error",
+			arrange: func(mock sqlmock.Sqlmock) {
+				update := mock.ExpectPrepare("UPDATE .+ SET .+ WHERE id = .+")
+				update.ExpectExec().WillReturnError(fmt.Errorf("execute statement error"))
+			},
+			expectErrContain: "execute statement error",
+		},
+	}
+
+	for _, tt := range negativeTests {
+		tt := tt // rebind tt into this lexical scope
+		t.Run(tt.name, func(t *testing.T) {
+			expStore, mock := setupDB(t)
+
+			// Arrange
+			tt.arrange(mock)
+
+			// Act
+			err := expStore.UpdateExpense(exp)
+
+			// Assertions
+			assert.Contains(t, err.Error(), tt.expectErrContain)
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
