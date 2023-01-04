@@ -18,6 +18,10 @@ type Err struct {
 	Message string `json:"message"`
 }
 
+type storer interface {
+	CreateExpense(exp Expense) (int, error)
+}
+
 type handler struct {
 	DB *sql.DB
 	store storer
