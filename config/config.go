@@ -14,9 +14,14 @@ func getenv(name string) string {
 type Config struct {
 	Port        string
 	DatabaseUrl string
+	AuthToken   string
 }
 
 // NewConfig returns a new app config
 func NewConfig() *Config {
-	return &Config{Port: getenv("PORT"), DatabaseUrl: getenv("DATABASE_URL")}
+	return &Config{
+		Port:        getenv("PORT"),
+		DatabaseUrl: getenv("DATABASE_URL"),
+		AuthToken:   getenv("AUTH_TOKEN"),
+	}
 }

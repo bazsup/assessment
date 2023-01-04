@@ -1,6 +1,8 @@
 package expense
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -23,8 +25,31 @@ type storer interface {
 	UpdateExpense(exp Expense) error
 }
 
-func NewApp(e *echo.Echo, s storer) {
+type CustomMiddleware struct {
+	authToken string
+}
+
+func NewCustomMiddleware(authToken string) *CustomMiddleware {
+	return &CustomMiddleware{authToken: authToken}
+}
+
+func (cm *CustomMiddleware) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		key := c.Request().Header.Get("Authorization")
+
+		if key != cm.authToken {
+			return c.JSON(http.StatusUnauthorized, Err{Message: "Unauthorized"})
+		}
+
+		return next(c)
+	}
+}
+
+func NewApp(e *echo.Echo, s storer, authToken string) {
 	h := NewExpense(s)
+
+	cm := NewCustomMiddleware(authToken)
+	e.Use(cm.authMiddleware)
 
 	e.POST("/expenses", h.CreateExpense)
 	e.GET("/expenses", h.GetAllExpenses)

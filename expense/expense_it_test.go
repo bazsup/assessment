@@ -12,7 +12,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -35,7 +34,7 @@ func setup() teardownFunc {
 		db := expense.InitDB(config.DatabaseUrl)
 		store := expense.NewExpenseStore(db)
 
-		expense.NewApp(e, store)
+		expense.NewApp(e, store, config.AuthToken)
 
 		e.Start(fmt.Sprintf(":%d", serverPort))
 	}(eh)
@@ -166,6 +165,27 @@ func TestITUpdateExpense(t *testing.T) {
 	}
 }
 
+func TestITAuthTokenRequired(t *testing.T) {
+	// Setup server
+	teardown := setup()
+	defer teardown(t)
+
+	// Arrange
+	req, _ := http.NewRequest(http.MethodGet, uri("expenses"), nil)
+	req.Header.Add("Authorization", "November 10, 2009wrong_token")
+	req.Header.Add("Content-Type", "application/json")
+	client := http.Client{}
+
+	// Act
+	res, err := client.Do(req)
+	res.Body.Close()
+
+	// Assertions
+	if assert.NoError(t, err) {
+		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
+	}
+}
+
 func seedExpense(t *testing.T) expense.Expense {
 	var c expense.Expense
 	body := strings.NewReader(`{
@@ -205,10 +225,12 @@ func (r *Response) Decode(v interface{}) error {
 	return json.NewDecoder(r.Body).Decode(v)
 }
 
+var conf = config.NewConfig()
+
 func request(method, url string, body io.Reader) *Response {
 	req, _ := http.NewRequest(method, url, body)
 
-	req.Header.Add("Authorization", os.Getenv("AUTH_TOKEN"))
+	req.Header.Add("Authorization", conf.AuthToken)
 	req.Header.Add("Content-Type", "application/json")
 	client := http.Client{}
 	res, err := client.Do(req)

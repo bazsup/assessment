@@ -25,7 +25,7 @@ func main() {
 	e.Use(middleware.Recover())
 
 	store := expense.NewExpenseStore(db)
-	expense.NewApp(e, store)
+	expense.NewApp(e, store, config.AuthToken)
 
 	go func() {
 		if err := e.Start(config.Port); err != nil && err != http.ErrServerClosed { // Start server
