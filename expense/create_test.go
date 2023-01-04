@@ -10,32 +10,35 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/bazsup/assessment/expense"
 	"github.com/stretchr/testify/assert"
 
 	_ "github.com/lib/pq"
 )
 
+func setupCreateExpense(t *testing.T, reqBody *bytes.Buffer) (*TestCtx, *TestStore) {
+	t.Parallel()
+
+	ctx := NewTestCtx(reqBody)
+	store := NewTestStore()
+	return ctx, store
+}
+
 func TestCreateExpense(t *testing.T) {
 	t.Run("Create Expense success", func(t *testing.T) {
 		// Arrange
-		reqBody := bytes.NewBufferString(`{
+		validReqBody := bytes.NewBufferString(`{
 			"title": "test-title",
 			"amount": 39000,
 			"note": "test-note",
 			"tags": ["test-tag1", "test-tag2"]
 		}`)
-		ctx := NewTestCtx(reqBody)
-		expenseMockRows := sqlmock.NewRows([]string{"id"}).
-			AddRow("1")
+		ctx, store := setupCreateExpense(t, validReqBody)
 
-		database, mock, err := sqlmock.New()
-		store := expense.NewExpenseStore(database)
-		mock.ExpectQuery("INSERT INTO expenses (.+) VALUES (.+) RETURNING id").WillReturnRows(expenseMockRows)
+		store.CreateExpenseWillReturn(1, nil)
 
 		// Act
-		err = expense.CreateExpenseHandler(ctx, store)
+		err := expense.CreateExpenseHandler(ctx, store)
 
 		var exp expense.Expense
 		ctx.DecodeResponse(&exp)
@@ -54,11 +57,10 @@ func TestCreateExpense(t *testing.T) {
 
 	t.Run("Invalid Create Expense Request", func(t *testing.T) {
 		// Arrange
-		reqBody := bytes.NewBufferString(`xx`)
-		ctx := NewTestCtx(reqBody)
+		invalidReqBody := bytes.NewBufferString(`xx`)
+		ctx, store := setupCreateExpense(t, invalidReqBody)
+
 		ctx.SetBindErr(fmt.Errorf("bind error"))
-		database, _, _ := sqlmock.New()
-		store := expense.NewExpenseStore(database)
 
 		// Act
 		err := expense.CreateExpenseHandler(ctx, store)
@@ -73,17 +75,17 @@ func TestCreateExpense(t *testing.T) {
 		}
 	})
 
-	t.Run("SQL error should return status code internal server error", func(t *testing.T) {
+	t.Run("Create Expense should return status code internal server error", func(t *testing.T) {
 		// Arrange
-		reqBody := bytes.NewBufferString(`{
+		validReqBody := bytes.NewBufferString(`{
 			"title": "test-title",
 			"amount": 39000,
 			"note": "test-note",
 			"tags": ["test-tag1", "test-tag2"]
 		}`)
-		ctx := NewTestCtx(reqBody)
-		database, _, _ := sqlmock.New()
-		store := expense.NewExpenseStore(database)
+		ctx, store := setupCreateExpense(t, validReqBody)
+
+		store.CreateExpenseWillReturn(0, fmt.Errorf("fail to create expense"))
 
 		// Act
 		err := expense.CreateExpenseHandler(ctx, store)
@@ -97,6 +99,27 @@ func TestCreateExpense(t *testing.T) {
 			assert.NotEmpty(t, errRes.Message)
 		}
 	})
+}
+
+type TestStore struct {
+	ctr CreateExpenseTestResult
+}
+
+func NewTestStore() *TestStore {
+	return &TestStore{}
+}
+
+func (s *TestStore) CreateExpense(exp expense.Expense) (int, error) {
+	return s.ctr.id, s.ctr.err
+}
+
+func (s *TestStore) CreateExpenseWillReturn(id int, err error) {
+	s.ctr = CreateExpenseTestResult{id, err}
+}
+
+type CreateExpenseTestResult struct {
+	id  int
+	err error
 }
 
 type TestCtx struct {
