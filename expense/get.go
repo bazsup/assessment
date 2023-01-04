@@ -3,21 +3,19 @@ package expense
 import (
 	"database/sql"
 	"net/http"
+	"strconv"
 
 	"github.com/bazsup/assessment/router"
 	"github.com/lib/pq"
 )
 
-func GetOneByIDHandler(c router.RouterCtx, database *sql.DB) error {
-	id := c.Param("id")
-	stmt, err := database.Prepare("SELECT id, title, amount, note, tags FROM expenses WHERE id = $1")
+func GetOneByIDHandler(c router.RouterCtx, store storer) error {
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare query expense statement:" + err.Error()})
+		return c.JSON(http.StatusNotFound, Err{Message: "expense not found"})
 	}
 
-	row := stmt.QueryRow(id)
-	exp := Expense{}
-	err = row.Scan(&exp.ID, &exp.Title, &exp.Amount, &exp.Note, pq.Array(&exp.Tags))
+	exp, err := store.GetExpenseByID(id)
 
 	switch err {
 	case sql.ErrNoRows:

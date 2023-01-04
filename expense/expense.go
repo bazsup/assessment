@@ -20,6 +20,7 @@ type Err struct {
 
 type storer interface {
 	CreateExpense(exp Expense) (int, error)
+	GetExpenseByID(id int) (*Expense, error)
 }
 
 type handler struct {
@@ -36,7 +37,7 @@ func (h *handler) CreateExpense(c echo.Context) error {
 }
 
 func (h *handler) GetExpense(c echo.Context) error {
-	return GetOneByIDHandler(c, h.DB)
+	return GetOneByIDHandler(c, h.store)
 }
 
 func (h *handler) GetAllExpenses(c echo.Context) error {

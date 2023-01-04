@@ -15,9 +15,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func setupGetOneExpense(t *testing.T) (*TestCtx, *TestStore) {
+	t.Parallel()
+
+	ctx := NewTestCtx(nil)
+	store := NewTestStore()
+	return ctx, store
+}
+
 func TestGetExpenseByID(t *testing.T) {
 	t.Run("Get Expense success", func(t *testing.T) {
-		t.Parallel()
+		ctx, store := setupGetOneExpense(t)
 
 		// Arrange
 		want := expense.Expense{
@@ -27,24 +35,17 @@ func TestGetExpenseByID(t *testing.T) {
 			Note:   "test-note",
 			Tags:   []string{"tag1", "tag2"},
 		}
-		ctx := NewTestCtx(nil)
 		ctx.SetParam("1")
 
-		expenseMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
-			AddRow(want.ID, want.Title, want.Amount, want.Note, pq.Array(&want.Tags))
-
-		database, mock, sqlErr := sqlmock.New()
-		get := mock.ExpectPrepare("SELECT .+ FROM expenses WHERE id = .+")
-		get.ExpectQuery().WithArgs("1").WillReturnRows(expenseMockRows)
+		store.GetExpenseByIDWillReturn(&want, nil)
 
 		// Act
-		err := expense.GetOneByIDHandler(ctx, database)
+		err := expense.GetOneByIDHandler(ctx, store)
 
 		var exp expense.Expense
 		ctx.DecodeResponse(&exp)
 
 		// Assertions
-		assert.NoError(t, sqlErr)
 		if assert.NoError(t, err) {
 			assert.Equal(t, http.StatusOK, ctx.status)
 
@@ -56,75 +57,61 @@ func TestGetExpenseByID(t *testing.T) {
 		}
 	})
 
-	t.Run("Prepare statment error should returns internal server error", func(t *testing.T) {
-		t.Parallel()
+	t.Run("Unknown error should returns internal server error", func(t *testing.T) {
+		ctx, store := setupGetOneExpense(t)
 
 		// Arrange
-		ctx := NewTestCtx(nil)
 		ctx.SetParam("1")
 
-		database, mock, sqlErr := sqlmock.New()
-		get := mock.ExpectPrepare("SELECT .+ FROM expenses WHERE id = .+")
-		get.WillReturnError(fmt.Errorf("error prepare statement"))
+		store.GetExpenseByIDWillReturn(nil, fmt.Errorf("unknown error"))
 
 		// Act
-		err := expense.GetOneByIDHandler(ctx, database)
+		err := expense.GetOneByIDHandler(ctx, store)
 
 		var errRes expense.Err
 		ctx.DecodeResponse(&errRes)
 
 		// Assertions
-		assert.NoError(t, sqlErr)
 		if assert.NoError(t, err) {
 			assert.Equal(t, http.StatusInternalServerError, ctx.status)
 			assert.NotEmpty(t, errRes.Message)
 		}
 	})
 
-	t.Run("Scan query error should returns internal server error", func(t *testing.T) {
-		t.Parallel()
+	t.Run("Get Expense Error Not found should returns status not found", func(t *testing.T) {
+		ctx, store := setupGetOneExpense(t)
 
 		// Arrange
-		ctx := NewTestCtx(nil)
 		ctx.SetParam("1")
 
-		database, mock, sqlErr := sqlmock.New()
-		get := mock.ExpectPrepare("SELECT .+ FROM expenses WHERE id = .+")
-		get.ExpectQuery().WithArgs("1").WillReturnError(fmt.Errorf("error query"))
+		store.GetExpenseByIDWillReturn(nil, sql.ErrNoRows)
 
 		// Act
-		err := expense.GetOneByIDHandler(ctx, database)
+		err := expense.GetOneByIDHandler(ctx, store)
 
 		var errRes expense.Err
 		ctx.DecodeResponse(&errRes)
 
 		// Assertions
-		assert.NoError(t, sqlErr)
 		if assert.NoError(t, err) {
-			assert.Equal(t, http.StatusInternalServerError, ctx.status)
-			assert.NotEmpty(t, errRes.Message)
+			assert.Equal(t, http.StatusNotFound, ctx.status)
+			assert.Equal(t, "expense not found", errRes.Message)
 		}
 	})
 
-	t.Run("Query success but not found should returns status not found", func(t *testing.T) {
-		t.Parallel()
+	t.Run("Get Expense Invalid ID Param should returns status not found", func(t *testing.T) {
+		ctx, store := setupGetOneExpense(t)
 
 		// Arrange
-		ctx := NewTestCtx(nil)
-		ctx.SetParam("1")
-
-		database, mock, sqlErr := sqlmock.New()
-		get := mock.ExpectPrepare("SELECT .+ FROM expenses WHERE id = .+")
-		get.ExpectQuery().WithArgs("1").WillReturnError(sql.ErrNoRows)
+		ctx.SetParam("invalid")
 
 		// Act
-		err := expense.GetOneByIDHandler(ctx, database)
+		err := expense.GetOneByIDHandler(ctx, store)
 
 		var errRes expense.Err
 		ctx.DecodeResponse(&errRes)
 
 		// Assertions
-		assert.NoError(t, sqlErr)
 		if assert.NoError(t, err) {
 			assert.Equal(t, http.StatusNotFound, ctx.status)
 			assert.Equal(t, "expense not found", errRes.Message)

@@ -2,6 +2,7 @@ package expense
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
 
@@ -49,4 +50,20 @@ func (e *ExpenseStore) CreateExpense(exp Expense) (int, error) {
 		exp.Title, exp.Amount, exp.Note, pq.Array(&exp.Tags))
 	err := row.Scan(&exp.ID)
 	return exp.ID, err
+}
+
+func (e *ExpenseStore) GetExpenseByID(id int) (*Expense, error) {
+	stmt, err := e.DB.Prepare("SELECT id, title, amount, note, tags FROM expenses WHERE id = $1")
+	if err != nil {
+		return nil, fmt.Errorf("can't prepare query expense statement: %s", err.Error())
+	}
+
+	row := stmt.QueryRow(id)
+	exp := &Expense{}
+	err = row.Scan(&exp.ID, &exp.Title, &exp.Amount, &exp.Note, pq.Array(&exp.Tags))
+	if err != nil {
+		return nil, err
+	}
+
+	return exp, nil
 }
