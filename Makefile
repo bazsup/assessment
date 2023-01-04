@@ -24,7 +24,7 @@ clear_testcache:
 # require database
 test_cover_html:
 	make clear_testcache && \
-	DATABASE_URL=postgres://root:root@localhost/assessment?sslmode=disable go test -cover -coverprofile=c.out --tags=unit,integration ./... && \
+	PORT=2565 DATABASE_URL=postgres://root:root@localhost/assessment?sslmode=disable go test -cover -coverprofile=c.out --tags=unit,integration ./... && \
 	go tool cover -html=c.out -o coverage.html
 
 env:
