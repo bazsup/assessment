@@ -20,14 +20,15 @@ type Err struct {
 
 type handler struct {
 	DB *sql.DB
+	store storer
 }
 
-func NewExpense(db *sql.DB) *handler {
-	return &handler{db}
+func NewExpense(db *sql.DB, store storer) *handler {
+	return &handler{db, store}
 }
 
 func (h *handler) CreateExpense(c echo.Context) error {
-	return CreateExpenseHandler(c, h.DB)
+	return CreateExpenseHandler(c, h.store)
 }
 
 func (h *handler) GetExpense(c echo.Context) error {

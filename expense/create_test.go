@@ -31,10 +31,11 @@ func TestCreateExpense(t *testing.T) {
 			AddRow("1")
 
 		database, mock, err := sqlmock.New()
+		store := expense.NewExpenseStore(database)
 		mock.ExpectQuery("INSERT INTO expenses (.+) VALUES (.+) RETURNING id").WillReturnRows(expenseMockRows)
 
 		// Act
-		err = expense.CreateExpenseHandler(ctx, database)
+		err = expense.CreateExpenseHandler(ctx, store)
 
 		var exp expense.Expense
 		ctx.DecodeResponse(&exp)
@@ -57,9 +58,10 @@ func TestCreateExpense(t *testing.T) {
 		ctx := NewTestCtx(reqBody)
 		ctx.SetBindErr(fmt.Errorf("bind error"))
 		database, _, _ := sqlmock.New()
+		store := expense.NewExpenseStore(database)
 
 		// Act
-		err := expense.CreateExpenseHandler(ctx, database)
+		err := expense.CreateExpenseHandler(ctx, store)
 
 		var errRes expense.Err
 		ctx.DecodeResponse(&errRes)
@@ -81,9 +83,10 @@ func TestCreateExpense(t *testing.T) {
 		}`)
 		ctx := NewTestCtx(reqBody)
 		database, _, _ := sqlmock.New()
+		store := expense.NewExpenseStore(database)
 
 		// Act
-		err := expense.CreateExpenseHandler(ctx, database)
+		err := expense.CreateExpenseHandler(ctx, store)
 
 		var errRes expense.Err
 		ctx.DecodeResponse(&errRes)

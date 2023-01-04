@@ -21,8 +21,9 @@ func main() {
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	store := expense.NewExpenseStore(db)
 
-	h := expense.NewExpense(db)
+	h := expense.NewExpense(db, store)
 
 	e.POST("/expenses", h.CreateExpense)
 	e.GET("/expenses", h.GetAllExpenses)
