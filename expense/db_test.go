@@ -12,6 +12,8 @@ import (
 )
 
 func setupDB(t *testing.T) (*expense.ExpenseStore, sqlmock.Sqlmock) {
+	t.Parallel()
+
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
