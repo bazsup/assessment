@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bazsup/assessment/config"
 	"github.com/bazsup/assessment/expense"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +31,8 @@ type teardownFunc = func(t *testing.T)
 func setup() teardownFunc {
 	eh := echo.New()
 	go func(e *echo.Echo) {
-		db := expense.InitDB()
+		config := config.NewConfig()
+		db := expense.InitDB(config.DatabaseUrl)
 		store := expense.NewExpenseStore(db)
 
 		expense.NewApp(e, store)

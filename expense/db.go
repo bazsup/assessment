@@ -4,16 +4,15 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/lib/pq"
 )
 
-func InitDB() *sql.DB {
+func InitDB(dbUrl string) *sql.DB {
 	var db *sql.DB
 
 	var err error
-	db, err = sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	db, err = sql.Open("postgres", dbUrl)
 	if err != nil {
 		log.Fatal("Connect to database error", err)
 	}

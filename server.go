@@ -9,24 +9,26 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/bazsup/assessment/config"
 	"github.com/bazsup/assessment/expense"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
-	db := expense.InitDB()
+	config := config.NewConfig()
+	db := expense.InitDB(config.DatabaseUrl)
 
 	e := echo.New()
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	
+
 	store := expense.NewExpenseStore(db)
 	expense.NewApp(e, store)
 
 	go func() {
-		if err := e.Start(os.Getenv("PORT")); err != nil && err != http.ErrServerClosed { // Start server
+		if err := e.Start(config.Port); err != nil && err != http.ErrServerClosed { // Start server
 			e.Logger.Fatal("shutting down the server")
 		}
 		log.Println("bye bye!")
