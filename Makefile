@@ -34,4 +34,4 @@ build:
 	docker build -t ghcr.io/bazsup/assessment:v1 .
 
 start:
-	docker run --name assessment -d --env-file .env.local -p 8080:2565 assessment:latest
+	docker run --name assessment -d --env-file .env.local -p 2565:2565 ghcr.io/bazsup/assessment:v1
